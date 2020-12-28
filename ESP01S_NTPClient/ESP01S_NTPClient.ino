@@ -25,8 +25,8 @@
 #include <time.h>
 
 #ifndef STASSID
-#define STASSID "HUAWEI P8 lite"
-#define STAPSK  "12345678"
+#define STASSID "YOGAWIFI"
+#define STAPSK  "123456789"
 #endif
 
 const char * ssid = STASSID; // your network SSID (name)
@@ -47,6 +47,9 @@ byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing pack
 // A UDP instance to let us send and receive packets over UDP
 WiFiUDP udp;
 
+int cnt = 360;
+time_t calculated_time;
+
 void setup() {
   Serial.begin(115200);
   Serial.println();
@@ -65,46 +68,167 @@ void setup() {
 }
 
 void loop() {
-  //get a random server from the pool
-  WiFi.hostByName(ntpServerName, timeServerIP);
 
-  sendNTPpacket(timeServerIP); // send an NTP packet to a time server
-  // wait to see if a reply is available
-  delay(1000);
+  cnt++;
+  calculated_time+=10;
 
-  int cb = udp.parsePacket();
-  if (!cb) {
-    Serial.println("$Error:1");
-  } else {
-    // We've received a packet, read the data from it
-    udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
+  if (cnt > 360){ 
+    //get a random server from the pool
+    WiFi.hostByName(ntpServerName, timeServerIP);
+  
+    sendNTPpacket(timeServerIP); // send an NTP packet to a time server
+    // wait to see if a reply is available
+    delay(500);  //TODO: check if this is enough or 1000 is better
+  
+    int cb = udp.parsePacket();
+    if (!cb) {
+      Serial.println("$Error:1");
+    } else {
+    
+      // We've received a packet, read the data from it
+      udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
+  
+      //the timestamp starts at byte 40 of the received packet and is four bytes,
+      // or two words, long. First, esxtract the two words:
+  
+      unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
+      unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
+      // combine the four bytes (two words) into a long integer
+      // this is NTP time (seconds since Jan 1 1900):
+      unsigned long secsSince1900 = highWord << 16 | lowWord;
+      // now convert NTP time into everyday time:
+      // Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
+      const unsigned long seventyYears = 2208988800UL;
+      // subtract seventy years:
+      unsigned long epoch = secsSince1900 - seventyYears;
 
-    //the timestamp starts at byte 40 of the received packet and is four bytes,
-    // or two words, long. First, esxtract the two words:
+      time_t rawtime;
+      rawtime = epoch + 3600;
+      struct tm  ts;
+      char       buf[80];
 
-    unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
-    unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
-    // combine the four bytes (two words) into a long integer
-    // this is NTP time (seconds since Jan 1 1900):
-    unsigned long secsSince1900 = highWord << 16 | lowWord;
-    // now convert NTP time into everyday time:
-    // Unix time starts on Jan 1 1970. In seconds, that's 2208988800:
-    const unsigned long seventyYears = 2208988800UL;
-    // subtract seventy years:
-    unsigned long epoch = secsSince1900 - seventyYears;
-
-    time_t rawtime = epoch + 3600;
-    struct tm  ts;
-    char       buf[80];
-
-    // Format time, yy-mm-dd,ddd,hh-mm-ss 
-    ts = *localtime(&rawtime);
-    ts.tm_isdst = 1;
-    strftime(buf, sizeof(buf), "$%y-%m-%d,%a,%H-%M-%S", &ts);
-    Serial.println(buf);
+      // Format time, yy-mm-dd,ddd,hh-mm-ss 
+      ts = *localtime(&rawtime);
+      ts.tm_isdst = 1;
+  
+      calculated_time = rawtime;
+      strftime(buf, sizeof(buf), "$%y-%m-%d,%a,%H-%M-%S", &ts); //TODO: remove for release
+      Serial.println(buf);//TODO: remove for release
+      cnt = 0;
+    }
   }
-  // wait ten seconds before asking for the time again
-  delay(10000); //TODO: increase this for release
+
+  controlBlinds(calculated_time);
+    // wait ten seconds before asking for the time again
+  delay(10000);
+  
+}
+
+void controlBlinds(time_t calc_time){
+  struct tm ts = *localtime(&calc_time);
+  ts.tm_isdst = 1;
+
+  switch (ts.tm_mon){
+    case 0:
+    if (ts.tm_hour > 7 && ts.tm_hour < 16){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 1:
+      if (ts.tm_hour > 7 && ts.tm_hour < 17){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 2:
+      if (ts.tm_hour > 7 && ts.tm_hour < 18){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 3:
+      if (ts.tm_hour > 7 && ts.tm_hour < 19){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 4:
+      if (ts.tm_hour > 7 && ts.tm_hour < 20){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 5:
+      if (ts.tm_hour > 7 && ts.tm_hour < 21){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 6:
+      if (ts.tm_hour > 7 && ts.tm_hour < 21){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 7:
+      if (ts.tm_hour > 7 && ts.tm_hour < 20){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 8:
+      if (ts.tm_hour > 7 && ts.tm_hour < 19){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 9:
+      if (ts.tm_hour > 7 && ts.tm_hour < 18){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 10:
+      if (ts.tm_hour > 7 && ts.tm_hour < 17){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    case 11:
+    if (ts.tm_hour > 7 && ts.tm_hour < 16){
+      Serial.println("Blinds open");
+      }
+    else{
+      Serial.println("Blinds closed");
+      }
+    break;
+    default:
+    break;
+    }
+
 }
 
 // send an NTP request to the time server at the given address
