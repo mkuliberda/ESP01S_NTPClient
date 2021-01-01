@@ -1,2 +1,2 @@
-# IrrigationModuleF4_NTPClient
-ESP01S-based NTP client for new version of Irrigation Module
+# ESP01S-based NTPClient
+ESP01S-based NTP client publishing current time on serial port
